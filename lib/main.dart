@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -34,13 +35,13 @@ class DschokeScreen extends StatefulWidget {
 }
 
 class _DschokeScreenState extends State<DschokeScreen> {
-  // Our Future, with a default value.
+  // Future mit einem Defaultwert.
   Future<String> jokeFuture = Future.value("None yet.");
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -60,14 +61,17 @@ class _DschokeScreenState extends State<DschokeScreen> {
                 } else if (snapshot.hasData) {
                   final String joke = snapshot.data ?? "Got empty text";
 
-                  return Text(joke);
+                  return Text(
+                    joke,
+                    style: const TextStyle(fontSize: 18),
+                  );
                 }
               }
 
               return const Text("Unkonwn case");
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
           ElevatedButton(
             onPressed: () {
               // Sorgt dafür, dass ein neuer Joke für das Future gesetzt wird.
@@ -95,7 +99,10 @@ Future<String> getJoke() async {
 
   final http.Response jokeResponse = await responseFuture;
 
-  final joke = jokeResponse.body;
+  final jokeBytes = jokeResponse.bodyBytes;
+
+  // Sicherstellen, dass die Antwort richtig umgewandelt wird.
+  final joke = utf8.decode(jokeBytes);
 
   log("joke: $joke");
 
