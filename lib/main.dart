@@ -34,50 +34,64 @@ class DschokeScreen extends StatefulWidget {
 }
 
 class _DschokeScreenState extends State<DschokeScreen> {
-  String joke = "";
-
-  @override
-  void initState() {
-    super.initState();
-    fetchJoke();
-  }
-
-  void fetchJoke() async {
-    setState(() {
-      joke = 'Loading joke...';
-    });
+  Future<String> getJoke() async {
+    await Future.delayed(const Duration(milliseconds: 2500), () {});
 
     final Future<http.Response> responseFuture = http.get(
       Uri.https('icanhazdadjoke.com', '/'),
+      // // Get one fixed joke.
+      // Uri.https('icanhazdadjoke.com', '/j/FBskq4MRnrc'),
       headers: {'Accept': 'text/plain'},
     );
 
-    final http.Response response = await responseFuture;
+    final http.Response jokeResponse = await responseFuture;
 
-    if (response.statusCode == 200) {
-      setState(() {
-        joke = response.body;
-        log("Joke loaded: $joke");
-      });
-    } else {
-      setState(() {
-        joke = 'Failed to load joke';
-      });
-    }
+    final joke = jokeResponse.body;
+
+    log("joke: $joke");
+
+    return joke;
   }
 
   @override
   Widget build(BuildContext context) {
+    // Wird bei jedem Aufruf von "build" neu gesetzt.
+    final Future<String> jokeFuture = getJoke();
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(joke),
+        FutureBuilder(
+          future: jokeFuture,
+          // Gibt das Widget zurück, das jeweils angezeigt werden soll.
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            } else if (snapshot.connectionState != ConnectionState.waiting) {
+              // Future ist fertig, jetzt können wir Daten anzeigen.
+              if (snapshot.hasError) {
+                return const Icon(
+                  Icons.error,
+                  color: Colors.red,
+                );
+              } else if (snapshot.hasData) {
+                final String joke = snapshot.data ?? "Got empty text";
+
+                return Text(joke);
+              }
+            }
+
+            return const Text("Unkonwn case");
+          },
         ),
         const SizedBox(height: 16),
         ElevatedButton(
-          onPressed: fetchJoke,
+          onPressed: () {
+            // Sorgt dafür, dass die "build"-Methode des StatefulWidget noch mal
+            // aufgerufen wird. Dadurch wird ein neues Future geholt und der
+            // FutureBuilder läuft wieder los, mit dem neuen Future.
+            setState(() {});
+          },
           child: const Text('Get another joke'),
         ),
       ],
