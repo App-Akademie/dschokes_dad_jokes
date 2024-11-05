@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -56,7 +57,8 @@ class _DschokeScreenState extends State<DschokeScreen> {
 
     if (response.statusCode == 200) {
       setState(() {
-        joke = response.body;
+        // Sicherstellen, dass die Textzeichen passen.
+        joke = utf8.decode(response.bodyBytes);
         log("Joke loaded: $joke");
       });
     } else {
@@ -72,10 +74,15 @@ class _DschokeScreenState extends State<DschokeScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(joke),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            joke,
+            style: const TextStyle(
+              fontSize: 18,
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 32),
         ElevatedButton(
           onPressed: fetchJoke,
           child: const Text('Get another joke'),
