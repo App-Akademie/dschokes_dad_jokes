@@ -34,67 +34,70 @@ class DschokeScreen extends StatefulWidget {
 }
 
 class _DschokeScreenState extends State<DschokeScreen> {
-  Future<String> getJoke() async {
-    await Future.delayed(const Duration(milliseconds: 2500), () {});
-
-    final Future<http.Response> responseFuture = http.get(
-      Uri.https('icanhazdadjoke.com', '/'),
-      // // Get one fixed joke.
-      // Uri.https('icanhazdadjoke.com', '/j/FBskq4MRnrc'),
-      headers: {'Accept': 'text/plain'},
-    );
-
-    final http.Response jokeResponse = await responseFuture;
-
-    final joke = jokeResponse.body;
-
-    log("joke: $joke");
-
-    return joke;
-  }
+  // Our Future, with a default value.
+  Future<String> jokeFuture = Future.value("None yet.");
 
   @override
   Widget build(BuildContext context) {
-    // Wird bei jedem Aufruf von "build" neu gesetzt.
-    final Future<String> jokeFuture = getJoke();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FutureBuilder(
+            future: jokeFuture,
+            // Gibt das Widget zurück, das jeweils angezeigt werden soll.
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const CircularProgressIndicator();
+              } else if (snapshot.connectionState == ConnectionState.done) {
+                // Future ist fertig, jetzt können wir Daten anzeigen.
+                if (snapshot.hasError) {
+                  return const Icon(
+                    Icons.error,
+                    color: Colors.red,
+                  );
+                } else if (snapshot.hasData) {
+                  final String joke = snapshot.data ?? "Got empty text";
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        FutureBuilder(
-          future: jokeFuture,
-          // Gibt das Widget zurück, das jeweils angezeigt werden soll.
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const CircularProgressIndicator();
-            } else if (snapshot.connectionState != ConnectionState.waiting) {
-              // Future ist fertig, jetzt können wir Daten anzeigen.
-              if (snapshot.hasError) {
-                return const Icon(
-                  Icons.error,
-                  color: Colors.red,
-                );
-              } else if (snapshot.hasData) {
-                final String joke = snapshot.data ?? "Got empty text";
-
-                return Text(joke);
+                  return Text(joke);
+                }
               }
-            }
 
-            return const Text("Unkonwn case");
-          },
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: () {
-            // Sorgt dafür, dass die "build"-Methode des StatefulWidget noch mal
-            // aufgerufen wird. Dadurch wird ein neues Future geholt und der
-            // FutureBuilder läuft wieder los, mit dem neuen Future.
-            setState(() {});
-          },
-          child: const Text('Get another joke'),
-        ),
-      ],
+              return const Text("Unkonwn case");
+            },
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              // Sorgt dafür, dass ein neuer Joke für das Future gesetzt wird.
+              // Durch das 'build' bekommt der FutureBuilder das auch mit.
+              setState(() {
+                jokeFuture = getJoke();
+              });
+            },
+            child: const Text('Get another joke'),
+          ),
+        ],
+      ),
     );
   }
+}
+
+// Holt einen Joke und gibt diesen zurück.
+Future<String> getJoke() async {
+  await Future.delayed(const Duration(milliseconds: 2500), () {});
+
+  final Future<http.Response> responseFuture = http.get(
+    Uri.https('icanhazdadjoke.com', '/'),
+    headers: {'Accept': 'text/plain'},
+  );
+
+  final http.Response jokeResponse = await responseFuture;
+
+  final joke = jokeResponse.body;
+
+  log("joke: $joke");
+
+  return joke;
 }
